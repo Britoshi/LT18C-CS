@@ -1,5 +1,7 @@
-﻿using System;
+﻿using SharpDX.DirectInput;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -69,6 +71,46 @@ namespace TelloConsole
             };
             PCJoystick.init();
 
+            //subscribe to Joystick update events. Called ~10x second.
+            PCKeyboard.onUpdate += (KeyboardState keyState) =>
+            {
+
+                Single rX = 0, rY = 0;
+                Single lX = 0, lY = 0;
+
+                Single boost = 0;
+
+                if (keyState.IsPressed(Key.A))
+                    rX--;
+                if (keyState.IsPressed(Key.D))
+                    rX++; 
+                if (keyState.IsPressed(Key.W))
+                    rY++;
+                if (keyState.IsPressed(Key.S))
+                    rY--;
+
+                if (keyState.IsPressed(Key.Q))
+                    lX--;
+                if (keyState.IsPressed(Key.E))
+                    lX++;
+                if (keyState.IsPressed(Key.Space))
+                    lY++; 
+                if (keyState.IsPressed(Key.LeftControl))
+                    lY--; 
+
+                if (keyState.IsPressed(Key.LeftShift))
+                    boost++; 
+
+
+                    //var boost = joyState.Z
+                float[] axes = new float[] { lX, lY, rX, rY, boost };
+                var outStr = string.Format("JOY {0: 0.00;-0.00} {1: 0.00;-0.00} {2: 0.00;-0.00} {3: 0.00;-0.00} {4: 0.00;-0.00}", axes[0], axes[1], axes[2], axes[3], axes[4]);
+                printAt(0, 22, outStr);
+                Tello.controllerState.setAxis(lX, lY, rX, rY);
+                Tello.sendControllerUpdate();
+            };
+            PCKeyboard.init();
+
             //Connection to send raw video data to local udp port.
             //To play: ffplay -probesize 32 -sync ext udp://127.0.0.1:7038
             //To play with minimum latency:ffmpeg -i udp://127.0.0.1:7038 -f sdl "Tello"
@@ -79,9 +121,14 @@ namespace TelloConsole
             {
                 try
                 {
-                    videoClient.Send(data.Skip(2).ToArray());//Skip 2 byte header and send to ffplay. 
+                    videoClient.Send(data.Skip(2).ToArray());
+                    
+                    
+
+                    //Skip 2 byte header and send to ffplay. 
                     //Console.WriteLine("Video size:" + data.Length);
-                }catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
 
                 }
