@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Mission.cs" />
     <Compile Include="PCJoystick.cs" />
     <Compile Include="PCKeyboard.cs" />
     <Compile Include="Program.cs" />

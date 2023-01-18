@@ -1,4 +1,5 @@
-﻿using SharpDX.DirectInput;
+﻿using Brito;
+using SharpDX.DirectInput;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,6 +20,7 @@ namespace TelloConsole
             {
                 if (newState != Tello.ConnectionState.Connected)
                 {
+
                 }
                 if (newState == Tello.ConnectionState.Connected)
                 {
@@ -51,25 +53,12 @@ namespace TelloConsole
                     //display state in console.
                     var outStr = Tello.state.ToString();//ToString() = Formated state
                     printAt(0, 2, outStr);
+
+                    //Now do the other stuff.
+                    Mission.Update();
                 }
             };
-
-            //subscribe to Joystick update events. Called ~10x second.
-            PCJoystick.onUpdate += (SharpDX.DirectInput.JoystickState joyState) =>
-            {
-
-                var rx = ((float)joyState.RotationX / 0x8000) - 1;
-                var ry = (((float)joyState.RotationY / 0x8000) - 1);
-                var lx = ((float)joyState.X / 0x8000) - 1;
-                var ly = (((float)joyState.Y / 0x8000) - 1);
-                //var boost = joyState.Z
-                float[] axes = new float[] { lx, ly, rx, ry, 0 };
-                var outStr = string.Format("JOY {0: 0.00;-0.00} {1: 0.00;-0.00} {2: 0.00;-0.00} {3: 0.00;-0.00} {4: 0.00;-0.00}", axes[0], axes[1], axes[2], axes[3], axes[4]);
-                printAt(0, 22, outStr);
-                Tello.controllerState.setAxis(lx, ly,rx, ry);
-                Tello.sendControllerUpdate();
-            };
-            PCJoystick.init();
+             
 
             //subscribe to Joystick update events. Called ~10x second.
             PCKeyboard.onUpdate += (KeyboardState keyState) =>
@@ -103,9 +92,15 @@ namespace TelloConsole
 
 
                     //var boost = joyState.Z
-                float[] axes = new float[] { lX, lY, rX, rY, boost };
+                float[] axes = new float[] { 
+                    lX + Mission.Instance.AxisModification[0],
+                    lY + Mission.Instance.AxisModification[1],
+                    rX + Mission.Instance.AxisModification[2],
+                    rY + Mission.Instance.AxisModification[3], 
+                    boost };
                 var outStr = string.Format("JOY {0: 0.00;-0.00} {1: 0.00;-0.00} {2: 0.00;-0.00} {3: 0.00;-0.00} {4: 0.00;-0.00}", axes[0], axes[1], axes[2], axes[3], axes[4]);
-                printAt(0, 22, outStr);
+                MyPrintAt(0, 22, outStr);
+                MyPrintAt(0, 15, Mission.Instance.AxisModification.ToString());
                 Tello.controllerState.setAxis(lX, lY, rX, rY);
                 Tello.sendControllerUpdate();
             };
@@ -142,15 +137,27 @@ namespace TelloConsole
             while(str!="exit")
             {
                 str = Console.ReadLine().ToLower();
-                if (str == "takeoff" && Tello.connected && !Tello.state.flying)
+                var condition = Tello.connected && !Tello.state.flying;
+
+                if (str == "takeoff" && condition)
                     Tello.takeOff();
-                if (str == "land" && Tello.connected && Tello.state.flying)
+                if (str == "land" && condition)
                     Tello.land();
                 if (str == "cls")
                 {
                     Tello.setMaxHeight(9);
                     Tello.queryMaxHeight();
                     clearConsole();
+                }
+                if(str.Contains("floor"))
+                {
+                    MyPrintAt(0, 1,"FLooring");
+                    Mission.SetLockHeight(100); 
+                }
+                if (str.Contains("ceiling"))
+                {
+                    MyPrintAt(0, 1, "Celing");
+                    Mission.SetLockHeight(200);
                 }
             }
         }
@@ -159,11 +166,21 @@ namespace TelloConsole
         {
             var saveLeft = Console.CursorLeft;
             var saveTop = Console.CursorTop;
+            //Console.SetCursorPosition(x, y);
+            //Console.WriteLine(str + "     ");//Hack. extra space is to clear any previous chars.
+            //Console.SetCursorPosition(saveLeft, saveTop);
+
+        }
+
+        static void MyPrintAt(int x, int y, string str)
+        {
+            var saveLeft = Console.CursorLeft;
+            var saveTop = Console.CursorTop;
             Console.SetCursorPosition(x, y);
             Console.WriteLine(str + "     ");//Hack. extra space is to clear any previous chars.
             Console.SetCursorPosition(saveLeft, saveTop);
-
         }
+
         static void clearConsole()
         {
             Console.Clear();

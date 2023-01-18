@@ -130,6 +130,12 @@ namespace TelloLib
 
             Tello.queryAttAngle();//refresh
         }
+
+        public static void MoveVertical(int distance)
+        {
+            //client.Send()
+        }
+        
         public static void setEis(int value)
         {
             //                                          crc    typ  cmdL  cmdH  seqL  seqH  valL  crc   crc
